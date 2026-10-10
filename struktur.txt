@@ -1,0 +1,30 @@
+sim_mahasiswa_be/
+│
+├── config/
+│   ├── database.php        # Konfigurasi koneksi database PDO
+│   └── app.php             # Konfigurasi umum (timezone, base URL, dll)
+│
+├── controllers/
+│   ├── AuthController.php    # Logika login, logout, & token
+│   ├── MahasiswaController.php # Logika CRUD & upload foto mahasiswa
+│   └── ProdiController.php   # Logika data program studi/fakultas
+│
+├── models/
+│   ├── Database.php        # Wrapper class PDO (opsional tapi rapi)
+│   ├── PenggunaModel.php   # Query SQL terkait tabel pengguna & roles
+│   └── MahasiswaModel.php  # Query SQL terkait tabel mahasiswa
+│
+├── middleware/
+│   ├── AuthMiddleware.php  # Pengecekan Token JWT / Session API
+│   └── CorsMiddleware.php  # Pengaturan Header CORS untuk Frontend (Vue/React/Flutter)
+│
+├── helpers/
+│   ├── ResponseHelper.php  # Standarisasi format JSON response (success, error)
+│   └── UploadHelper.php    # Fungsi validasi & pemrosesan upload gambar/file
+│
+├── uploads/
+│   └── mahasiswa/          # Folder fisik penyimpanan file gambar/foto profil
+│
+├── .htaccess               # Pengaturan URL Rewriting (Clean URL / Front Controller)
+├── .env                    # Variabel environment (DB_HOST, DB_NAME, dll)
+└── index.php               # Entry point utama (Routing pusat API)
