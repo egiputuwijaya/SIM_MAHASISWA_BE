@@ -95,9 +95,30 @@ Contoh langkah di shared hosting cPanel/LiteSpeed:
 | GET | `/api/v1/mahasiswa/{id}` | token | Detail mahasiswa |
 | PUT | `/api/v1/mahasiswa/{id}` | ADMIN/OPERATOR_PRODI | Update (JSON atau multipart + `_method=PUT`) |
 | DELETE | `/api/v1/mahasiswa/{id}` | ADMIN/OPERATOR_PRODI | Hapus data + file foto fisik |
+| GET | `/api/v1/profil-mahasiswa` | token | Profil dari view `v_profil_mahasiswa` (data diri + prodi/fakultas/univ), scope per role |
+| GET | `/api/v1/profil-mahasiswa/{id}` | token | Detail profil mahasiswa |
 | GET | `/api/v1/fakultas` | token | Daftar fakultas (`?q=`, `?id_universitas=`) |
+| GET | `/api/v1/fakultas/{id}` | token | Detail fakultas |
+| POST | `/api/v1/fakultas` | ADMIN | Tambah fakultas |
+| PUT | `/api/v1/fakultas/{id}` | ADMIN | Ubah fakultas (partial) |
+| DELETE | `/api/v1/fakultas/{id}` | ADMIN | Hapus (ditolak 422 bila masih ada prodi/pengguna) |
 | GET | `/api/v1/program-studi` | token | Daftar prodi (`?q=`, `?id_fakultas=`, `?status_aktif=`) |
 | GET | `/api/v1/program-studi/{id}` | token | Detail prodi |
+| POST | `/api/v1/program-studi` | ADMIN | Tambah prodi |
+| PUT | `/api/v1/program-studi/{id}` | ADMIN | Ubah prodi (partial) |
+| DELETE | `/api/v1/program-studi/{id}` | ADMIN | Hapus (ditolak 422 bila masih ada mahasiswa/pengguna) |
+| GET | `/api/v1/universitas` | token | Daftar universitas (`?q=`) |
+| GET | `/api/v1/universitas/{id}` | token | Detail universitas + `jumlah_fakultas` |
+| POST | `/api/v1/universitas` | ADMIN | Tambah universitas |
+| PUT | `/api/v1/universitas/{id}` | ADMIN | Ubah universitas (partial) |
+| DELETE | `/api/v1/universitas/{id}` | ADMIN | Hapus (ditolak 422 bila masih ada fakultas/pengguna) |
+| GET | `/api/v1/pengguna` | ADMIN | List pengguna + search (`q`, `status_aktif`, `id_role`, `page`, `per_page`) |
+| GET | `/api/v1/pengguna/{id}` | ADMIN | Detail pengguna (tanpa `password_hash`) |
+| POST | `/api/v1/pengguna` | ADMIN | Tambah pengguna (`password` di-hash bcrypt) |
+| PUT | `/api/v1/pengguna/{id}` | ADMIN | Ubah pengguna; `password` kosong = tidak diganti |
+| DELETE | `/api/v1/pengguna/{id}` | ADMIN | Hapus pengguna (tidak bisa hapus akun sendiri) |
+| GET | `/api/v1/roles` | token | Daftar role + `jumlah_pengguna` |
+| GET | `/api/v1/audit-log` | ADMIN | Riwayat aktivitas (`?aksi=`, `?tabel_nama=`, `?id_pengguna=`, `?dari=`, `?sampai=`, `?page=`, `?per_page=`) |
 
 ### Format response
 
@@ -150,7 +171,7 @@ curl -X POST "$BASE/mahasiswa/1" \
 
 | Role | Akses |
 |---|---|
-| ADMIN | baca + tulis seluruh data |
+| ADMIN | baca + tulis seluruh data (termasuk pengguna & audit-log) |
 | OPERATOR_PRODI | baca + tulis hanya pada program studinya |
 | DEKANAT / REKTORAT | baca saja |
 | MAHASISWA | baca hanya data miliknya sendiri |

@@ -6,13 +6,17 @@ sim_mahasiswa_be/
 │
 ├── controllers/
 │   ├── AuthController.php    # Logika login, logout, & token
-│   ├── MahasiswaController.php # Logika CRUD & upload foto mahasiswa
-│   └── ProdiController.php   # Logika data program studi/fakultas
+│   ├── MahasiswaController.php # Logika CRUD & upload foto mahasiswa (+ profil view)
+│   ├── ProdiController.php   # Logika data program studi/fakultas (read + CRUD)
+│   ├── MasterController.php  # Logika CRUD data universitas
+│   ├── PenggunaController.php # Logika manajemen pengguna & roles (ADMIN)
+│   └── AuditController.php   # Logika baca audit_log (ADMIN)
 │
 ├── models/
 │   ├── Database.php        # Wrapper class PDO (opsional tapi rapi)
-│   ├── PenggunaModel.php   # Query SQL terkait tabel pengguna & roles
-│   └── MahasiswaModel.php  # Query SQL terkait tabel mahasiswa
+│   ├── PenggunaModel.php   # Query SQL terkait tabel pengguna, roles, & audit_log
+│   ├── MahasiswaModel.php  # Query SQL terkait tabel mahasiswa (+ view profil)
+│   └── MasterModel.php     # Query SQL terkait tabel universitas, fakultas, program_studi, roles
 │
 ├── middleware/
 │   ├── AuthMiddleware.php  # Pengecekan Token JWT / Session API

@@ -138,12 +138,98 @@ class MahasiswaModel
         return $this->update($id, ['foto' => $fotoPath]);
     }
 
+    // =====================================================================
+    // Profil (view v_profil_mahasiswa: data diri + prodi/fakultas/universitas)
+    // =====================================================================
+
+    /**
+     * Daftar profil dari view v_profil_mahasiswa + pencarian + pagination.
+     *
+     * @param array $filters ['q' => npm/nama, 'status_mahasiswa' => ..,
+     *                        'id_mahasiswa' => int, 'kode_program_studi' => string]
+     * @return array{items: array, pagination: array}
+     */
+    public function profilPaginate(array $filters = [], int $page = 1, int $perPage = 10): array
+    {
+        $page    = max(1, $page);
+        $perPage = min(100, max(1, $perPage));
+        $offset  = ($page - 1) * $perPage;
+
+        $conds  = [];
+        $params = [];
+
+        if (!empty($filters['q'])) {
+            $keyword            = '%' . trim((string) $filters['q']) . '%';
+            $conds[]            = '(v.npm LIKE :q_npm OR v.nama_mahasiswa LIKE :q_nama)';
+            $params[':q_npm']   = $keyword;
+            $params[':q_nama']  = $keyword;
+        }
+
+        if (!empty($filters['status_mahasiswa'])) {
+            $conds[]                 = 'v.status_mahasiswa = :status';
+            $params[':status']       = (string) $filters['status_mahasiswa'];
+        }
+
+        if (array_key_exists('id_mahasiswa', $filters)) {
+            $conds[]                    = 'v.id_mahasiswa = :id_mahasiswa';
+            $params[':id_mahasiswa']    = (int) $filters['id_mahasiswa'];
+        }
+
+        if (!empty($filters['kode_program_studi'])) {
+            $conds[]                    = 'v.kode_program_studi = :kode_prodi';
+            $params[':kode_prodi']      = (string) $filters['kode_program_studi'];
+        }
+
+        $where = $conds !== [] ? ' WHERE ' . implode(' AND ', $conds) : '';
+
+        $total = (int) ($this->db->fetchColumn('SELECT COUNT(*) FROM v_profil_mahasiswa v' . $where, $params) ?? 0);
+
+        $sql = 'SELECT v.* FROM v_profil_mahasiswa v'
+             . $where . '
+                ORDER BY v.nama_mahasiswa ASC
+                LIMIT ' . (int) $offset . ', ' . (int) $perPage;
+
+        $items = $this->db->fetchAll($sql, $params);
+
+        return [
+            'items'      => array_map([$this, 'withFotoUrl'], $items),
+            'pagination' => [
+                'page'      => $page,
+                'per_page'  => $perPage,
+                'total'     => $total,
+                'last_page' => max(1, (int) ceil($total / $perPage)),
+            ],
+        ];
+    }
+
+    /** Detail profil satu mahasiswa dari view. */
+    public function profilById(int $id): ?array
+    {
+        $row = $this->db->fetchOne(
+            'SELECT v.* FROM v_profil_mahasiswa v WHERE v.id_mahasiswa = :id LIMIT 1',
+            [':id' => $id]
+        );
+
+        return $row !== null ? $this->withFotoUrl($row) : null;
+    }
+
     /** Apakah program studi tersedia? (validasi FK) */
     public function prodiExists(int $idProgramStudi): bool
     {
         $sql = 'SELECT 1 FROM program_studi WHERE id_program_studi = :id LIMIT 1';
 
         return $this->db->fetchColumn($sql, [':id' => $idProgramStudi]) !== null;
+    }
+
+    /** Kode program studi (untuk filter view profil berbasis kode). */
+    public function prodiKode(int $idProgramStudi): ?string
+    {
+        $kode = $this->db->fetchColumn(
+            'SELECT kode_program_studi FROM program_studi WHERE id_program_studi = :id LIMIT 1',
+            [':id' => $idProgramStudi]
+        );
+
+        return $kode !== null ? (string) $kode : null;
     }
 
     // ---------------------------------------------------------------------

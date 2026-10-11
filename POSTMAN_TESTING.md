@@ -265,8 +265,66 @@ pm.test("Format JSON baku", function () {
 | Request | Params | Keterangan |
 |---|---|---|
 | GET `{{base_url}}/fakultas` | `q`, `id_universitas` | `{ items, total }` |
+| GET `{{base_url}}/fakultas/{{id}}` | – | detail 1 fakultas; **404** bila tidak ada |
+| POST `{{base_url}}/fakultas` | – | ADMIN — body: `id_universitas`, `kode_fakultas`, `nama_fakultas` |
+| PUT `{{base_url}}/fakultas/{{id}}` | – | ADMIN — partial update |
+| DELETE `{{base_url}}/fakultas/{{id}}` | – | ADMIN — **422** bila masih ada prodi/pengguna |
 | GET `{{base_url}}/program-studi` | `q`, `id_fakultas`, `status_aktif` | `{ items, total }` |
 | GET `{{base_url}}/program-studi/{{id}}` | – | detail 1 prodi; **404** bila tidak ada |
+| POST `{{base_url}}/program-studi` | – | ADMIN — body: `id_fakultas`, `kode_program_studi`, `nama_program_studi`, `jenjang`, `status_aktif` |
+| PUT `{{base_url}}/program-studi/{{id}}` | – | ADMIN — partial update |
+| DELETE `{{base_url}}/program-studi/{{id}}` | – | ADMIN — **422** bila masih ada mahasiswa/pengguna |
+
+### 3.4. Universitas (baru)
+
+| Request | Params | Keterangan |
+|---|---|---|
+| GET `{{base_url}}/universitas` | `q` | `{ items, total }` + `jumlah_fakultas` |
+| GET `{{base_url}}/universitas/{{id}}` | – | **404** bila tidak ada |
+| POST `{{base_url}}/universitas` | – | ADMIN — body: `kode_universitas`, `nama_universitas`, opsional `slogan`, `alamat`, `kota`, `provinsi`, `kode_pos`, `website`, `email`, `telepon` |
+| PUT `{{base_url}}/universitas/{{id}}` | – | ADMIN — partial update |
+| DELETE `{{base_url}}/universitas/{{id}}` | – | ADMIN — **422** bila masih ada fakultas/pengguna |
+
+Contoh tambah universitas (JSON):
+
+```json
+{
+    "kode_universitas": "UMB2",
+    "nama_universitas": "Universitas Uji Coba",
+    "kota": "Bengkulu"
+}
+```
+
+### 3.5. Pengguna & Roles (baru, ADMIN)
+
+| Request | Params | Keterangan |
+|---|---|---|
+| GET `{{base_url}}/pengguna` | `q`, `status_aktif`, `id_role`, `page`, `per_page` | list + pagination; **403** bila bukan ADMIN |
+| GET `{{base_url}}/pengguna/{{id}}` | – | detail tanpa `password_hash` |
+| POST `{{base_url}}/pengguna` | – | body: `username`, `password` (min 6), `nama_lengkap`, `id_role`, opsional `email`, `no_hp`, `status_aktif`, `id_universitas`, `id_fakultas`, `id_program_studi` |
+| PUT `{{base_url}}/pengguna/{{id}}` | – | partial; `password` kosong = tidak diganti |
+| DELETE `{{base_url}}/pengguna/{{id}}` | – | **403** bila hapus akun sendiri |
+| GET `{{base_url}}/roles` | – | semua role terautentikasi — `{ items, total }` + `jumlah_pengguna` |
+
+Catatan:
+
+- `password` dikirim plaintext, disimpan server sebagai bcrypt hash; hash tidak pernah muncul di response.
+- Username duplikat -> **422** `errors.username`; role tidak ada -> **422** `errors.id_role`.
+
+### 3.6. Audit Log (baru, ADMIN)
+
+| Request | Params | Keterangan |
+|---|---|---|
+| GET `{{base_url}}/audit-log` | `aksi`, `tabel_nama`, `id_pengguna`, `dari`, `sampai`, `page`, `per_page` | riwayat aktivitas; `aksi` salah -> **422** |
+
+`aksi` yang valid: `LOGIN`, `LOGOUT`, `INSERT`, `UPDATE`, `DELETE`, `VIEW`. Format tanggal `YYYY-MM-DD`.
+
+### 3.7. Profil Mahasiswa — view (baru)
+
+| Request | Params | Keterangan |
+|---|---|---|
+| GET `{{base_url}}/profil-mahasiswa` | `q`, `status_mahasiswa`, `page`, `per_page` | dari view `v_profil_mahasiswa` (data diri + prodi/fakultas/universitas), scope per role |
+| GET `{{base_url}}/profil-mahasiswa/{{id}}` | – | **404** bila tidak ada; **403** di luar scope role |
 
 ---
 
@@ -307,6 +365,20 @@ pm.test("Format JSON baku", function () {
 - [ ] `DEKANAT` / `REKTORAT`: `POST /mahasiswa` → `403` `"Role ... tidak memiliki akses"`.
 - [ ] `MAHASISWA`: `GET /mahasiswa` hanya berisi datanya sendiri.
 - [ ] `MAHASISWA`: `GET /mahasiswa/{id}` milik orang lain → `403`.
+
+### Master data & pengguna (baru)
+
+- [ ] `GET /universitas` → `200` + `jumlah_fakultas`.
+- [ ] `POST /universitas` (ADMIN) → `201`; kode sama -> `422`/`409`.
+- [ ] `DELETE /universitas/1` (punya fakultas) → `422`.
+- [ ] `POST /fakultas` & `/program-studi` (ADMIN) → `201`; `DELETE` berpenghuni -> `422`.
+- [ ] `GET /roles` (semua role) → `200` + `jumlah_pengguna`.
+- [ ] `POST /pengguna` (ADMIN) → `201`, **tanpa** `password_hash` di response.
+- [ ] `PUT /pengguna/{id}` tanpa `password` -> data terupdate, password lama tetap berlaku.
+- [ ] `DELETE /pengguna/{id}` akun sendiri -> `403`.
+- [ ] Non-ADMIN (mis. `operator.ti`) akses `/pengguna` atau `/audit-log` → `403`.
+- [ ] `GET /audit-log?aksi=INSERT` → `200`; `aksi=SALAH` → `422`.
+- [ ] `GET /profil-mahasiswa` → `200` + field prodi/fakultas/universitas.
 
 ### Routing & error
 

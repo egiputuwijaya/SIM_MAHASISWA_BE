@@ -14,9 +14,34 @@
  *   PUT    /api/v1/mahasiswa/{id}           -> MahasiswaController@update (terproteksi, multipart)
  *   DELETE /api/v1/mahasiswa/{id}           -> MahasiswaController@destroy(terproteksi)
  *
- *   GET    /api/v1/fakultas                 -> ProdiController@fakultas   (terproteksi)
- *   GET    /api/v1/program-studi            -> ProdiController@index      (terproteksi)
- *   GET    /api/v1/program-studi/{id}       -> ProdiController@show       (terproteksi)
+ *   GET    /api/v1/profil-mahasiswa         -> MahasiswaController@profilIndex (terproteksi, view)
+ *   GET    /api/v1/profil-mahasiswa/{id}    -> MahasiswaController@profilShow  (terproteksi, view)
+ *
+ *   GET    /api/v1/fakultas                 -> ProdiController@fakultas         (terproteksi)
+ *   GET    /api/v1/fakultas/{id}            -> ProdiController@showFakultas     (terproteksi)
+ *   POST   /api/v1/fakultas                 -> ProdiController@storeFakultas    (ADMIN)
+ *   PUT    /api/v1/fakultas/{id}            -> ProdiController@updateFakultas   (ADMIN)
+ *   DELETE /api/v1/fakultas/{id}            -> ProdiController@destroyFakultas  (ADMIN)
+ *   GET    /api/v1/program-studi            -> ProdiController@index            (terproteksi)
+ *   GET    /api/v1/program-studi/{id}       -> ProdiController@show             (terproteksi)
+ *   POST   /api/v1/program-studi            -> ProdiController@storeProdi       (ADMIN)
+ *   PUT    /api/v1/program-studi/{id}       -> ProdiController@updateProdi      (ADMIN)
+ *   DELETE /api/v1/program-studi/{id}       -> ProdiController@destroyProdi     (ADMIN)
+ *
+ *   GET    /api/v1/universitas              -> MasterController@index           (terproteksi)
+ *   GET    /api/v1/universitas/{id}         -> MasterController@show            (terproteksi)
+ *   POST   /api/v1/universitas              -> MasterController@store           (ADMIN)
+ *   PUT    /api/v1/universitas/{id}         -> MasterController@update          (ADMIN)
+ *   DELETE /api/v1/universitas/{id}         -> MasterController@destroy         (ADMIN)
+ *
+ *   GET    /api/v1/pengguna                 -> PenggunaController@index         (ADMIN)
+ *   GET    /api/v1/pengguna/{id}            -> PenggunaController@show          (ADMIN)
+ *   POST   /api/v1/pengguna                 -> PenggunaController@store         (ADMIN)
+ *   PUT    /api/v1/pengguna/{id}            -> PenggunaController@update        (ADMIN)
+ *   DELETE /api/v1/pengguna/{id}            -> PenggunaController@destroy       (ADMIN)
+ *   GET    /api/v1/roles                    -> PenggunaController@roles         (terproteksi)
+ *
+ *   GET    /api/v1/audit-log                -> AuditController@index            (ADMIN)
  *
  * Catatan upload (multipart):
  *   Browser/HTTP tidak mem-parse body PUT, jadi kirim sebagai POST dengan
@@ -35,11 +60,15 @@ require BASE_PATH . '/helpers/UploadHelper.php';
 require BASE_PATH . '/models/Database.php';
 require BASE_PATH . '/models/PenggunaModel.php';
 require BASE_PATH . '/models/MahasiswaModel.php';
+require BASE_PATH . '/models/MasterModel.php';
 require BASE_PATH . '/middleware/CorsMiddleware.php';
 require BASE_PATH . '/middleware/AuthMiddleware.php';
 require BASE_PATH . '/controllers/AuthController.php';
 require BASE_PATH . '/controllers/MahasiswaController.php';
 require BASE_PATH . '/controllers/ProdiController.php';
+require BASE_PATH . '/controllers/MasterController.php';
+require BASE_PATH . '/controllers/PenggunaController.php';
+require BASE_PATH . '/controllers/AuditController.php';
 
 // --- Request helpers -------------------------------------------------------
 
@@ -128,10 +157,44 @@ $routes = [
     ['PATCH',  '#^/api/v1/mahasiswa/(\d+)$#',                [MahasiswaController::class, 'update'], true],
     ['DELETE', '#^/api/v1/mahasiswa/(\d+)$#',                [MahasiswaController::class, 'destroy'], true],
 
-    // Program studi & fakultas
+    // Program studi & fakultas (read semua role tulis ADMIN)
     ['GET',    '#^/api/v1/fakultas$#',                       [ProdiController::class, 'fakultas'],  true],
+    ['POST',   '#^/api/v1/fakultas$#',                       [ProdiController::class, 'storeFakultas'],   true],
+    ['GET',    '#^/api/v1/fakultas/(\d+)$#',                 [ProdiController::class, 'showFakultas'],    true],
+    ['PUT',    '#^/api/v1/fakultas/(\d+)$#',                 [ProdiController::class, 'updateFakultas'],  true],
+    ['PATCH',  '#^/api/v1/fakultas/(\d+)$#',                 [ProdiController::class, 'updateFakultas'],  true],
+    ['DELETE', '#^/api/v1/fakultas/(\d+)$#',                 [ProdiController::class, 'destroyFakultas'], true],
+
     ['GET',    '#^/api/v1/program-studi$#',                  [ProdiController::class, 'index'],     true],
+    ['POST',   '#^/api/v1/program-studi$#',                  [ProdiController::class, 'storeProdi'],      true],
     ['GET',    '#^/api/v1/program-studi/(\d+)$#',            [ProdiController::class, 'show'],      true],
+    ['PUT',    '#^/api/v1/program-studi/(\d+)$#',            [ProdiController::class, 'updateProdi'],     true],
+    ['PATCH',  '#^/api/v1/program-studi/(\d+)$#',            [ProdiController::class, 'updateProdi'],     true],
+    ['DELETE', '#^/api/v1/program-studi/(\d+)$#',            [ProdiController::class, 'destroyProdi'],    true],
+
+    // Universitas (read semua role tulis ADMIN)
+    ['GET',    '#^/api/v1/universitas$#',                    [MasterController::class, 'index'],     true],
+    ['POST',   '#^/api/v1/universitas$#',                    [MasterController::class, 'store'],     true],
+    ['GET',    '#^/api/v1/universitas/(\d+)$#',              [MasterController::class, 'show'],      true],
+    ['PUT',    '#^/api/v1/universitas/(\d+)$#',              [MasterController::class, 'update'],    true],
+    ['PATCH',  '#^/api/v1/universitas/(\d+)$#',              [MasterController::class, 'update'],    true],
+    ['DELETE', '#^/api/v1/universitas/(\d+)$#',              [MasterController::class, 'destroy'],   true],
+
+    // Pengguna & role (ADMIN kecuali roles=read semua)
+    ['GET',    '#^/api/v1/pengguna$#',                       [PenggunaController::class, 'index'],   true],
+    ['POST',   '#^/api/v1/pengguna$#',                       [PenggunaController::class, 'store'],   true],
+    ['GET',    '#^/api/v1/pengguna/(\d+)$#',                 [PenggunaController::class, 'show'],    true],
+    ['PUT',    '#^/api/v1/pengguna/(\d+)$#',                 [PenggunaController::class, 'update'],  true],
+    ['PATCH',  '#^/api/v1/pengguna/(\d+)$#',                 [PenggunaController::class, 'update'],  true],
+    ['DELETE', '#^/api/v1/pengguna/(\d+)$#',                 [PenggunaController::class, 'destroy'], true],
+    ['GET',    '#^/api/v1/roles$#',                          [PenggunaController::class, 'roles'],   true],
+
+    // Audit log (ADMIN)
+    ['GET',    '#^/api/v1/audit-log$#',                      [AuditController::class, 'index'],      true],
+
+    // Profil mahasiswa (view v_profil_mahasiswa)
+    ['GET',    '#^/api/v1/profil-mahasiswa$#',               [MahasiswaController::class, 'profilIndex'], true],
+    ['GET',    '#^/api/v1/profil-mahasiswa/(\d+)$#',         [MahasiswaController::class, 'profilShow'],  true],
 ];
 
 $pathMatched  = false;

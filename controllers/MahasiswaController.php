@@ -262,6 +262,65 @@ class MahasiswaController
     }
 
     // =====================================================================
+    // GET /api/v1/profil-mahasiswa  (view v_profil_mahasiswa: data diri + prodi)
+    // =====================================================================
+    public function profilIndex(?array $user): void
+    {
+        $query   = req_query();
+        $filters = [];
+
+        if (!empty($query['q'])) {
+            $filters['q'] = (string) $query['q'];
+        }
+        if (!empty($query['status_mahasiswa'])) {
+            $filters['status_mahasiswa'] = (string) $query['status_mahasiswa'];
+        }
+
+        // Scope berdasar role (view tidak punya kolom id_program_studi/id_pengguna,
+        // jadi OPERATOR_PRODI difilter via kode prodi, MAHASISWA via id_mahasiswa)
+        $role = (string) ($user['kode_role'] ?? '');
+
+        if ($role === 'OPERATOR_PRODI') {
+            $prodi = $this->mahasiswa->prodiKode((int) ($user['id_program_studi'] ?? 0));
+            $filters['kode_program_studi'] = $prodi ?? '__TIDAK_ADA__';
+        } elseif ($role === 'MAHASISWA') {
+            $own = $this->mahasiswa->findByPengguna((int) $user['id_pengguna']);
+            $filters['id_mahasiswa'] = $own !== null ? (int) $own['id_mahasiswa'] : 0;
+        }
+
+        $page    = max(1, (int) ($query['page'] ?? 1));
+        $perPage = max(1, (int) ($query['per_page'] ?? 10));
+
+        $result = $this->mahasiswa->profilPaginate($filters, $page, $perPage);
+
+        ResponseHelper::success($result, 'Profil mahasiswa berhasil diambil.');
+    }
+
+    // =====================================================================
+    // GET /api/v1/profil-mahasiswa/{id}
+    // =====================================================================
+    public function profilShow(?array $user, int $id): void
+    {
+        // Cek scope memakai row asli (punya id_pengguna/id_program_studi),
+        // payload response diambil dari view
+        $scopeRow = $this->mahasiswa->findById($id);
+
+        if ($scopeRow === null) {
+            ResponseHelper::notFound('Mahasiswa tidak ditemukan.');
+        }
+
+        $this->assertReadable($user, $scopeRow);
+
+        $profil = $this->mahasiswa->profilById($id);
+
+        if ($profil === null) {
+            ResponseHelper::notFound('Profil mahasiswa tidak ditemukan.');
+        }
+
+        ResponseHelper::success($profil, 'Profil mahasiswa berhasil diambil.');
+    }
+
+    // =====================================================================
     // Internal
     // =====================================================================
 
